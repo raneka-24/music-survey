@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>楽器音源に関するアンケート</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f7f6;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .survey-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 650px;
+            width: 100%;
+        }
+        .progress-bar {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+            text-align: right;
+        }
+        .section {
+            display: none; /* 初期状態ではすべて非表示 */
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+        }
+        .section.active {
+            display: block; /* 現在の質問だけを表示 */
+        }
+        .section h2 {
+            color: #333;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin-top: 10px;
+        }
+        audio {
+            display: block;
+            margin: 15px 0;
+            width: 100%;
+        }
+        .question-text {
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        .likert-scale {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .likert-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            flex: 1;
+            text-align: center;
+        }
+        .likert-option input {
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .scale-label {
+            font-size: 0.85rem;
+            color: #666;
+            font-weight: bold;
+        }
+        .nav-buttons {
+            margin-top: 30px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+<div class="survey-container">
+    <h1>音源に関するアンケート</h1>
+    <p id="survey-intro">それぞれの音源を聴いて、その楽器としての「らしさ」を5段階で評価してください。</p>
+    <div class="progress-bar" id="progress-text"></div>
+    <hr>
+
+    <div id="survey-sections">
+        <div class="section active" id="step-student-id">
+            <h2>回答者の情報を入力してください</h2>
+            <p class="question-text">学籍番号を入力してください（例: 2○G○○○○）</p>
+            <input type="text" id="student_id_input" placeholder="学籍番号を入力">
+        </div>
+    </div>
+
+    <div class="nav-buttons">
+        <button id="next-btn" onclick="nextSection()">次へ進む</button>
+        <button id="submit-btn" onclick="submitSurvey()" style="display: none;">回答を送信する</button>
+    </div>
+</div>
+
+<script>
+    // 1. 全8個の音源データを定義
+    const sectionsData = [
+        { id: "piano_own",      title: "ピアノ",       audioSrc: "maid_piano.wav" },
+        { id: "piano_sample",   title: "ピアノ",       audioSrc: "sample_piano.mp3" },
+        { id: "trumpet_own",    title: "トランペット", audioSrc: "maid_trumpet.wav" },
+        { id: "trumpet_sample", title: "トランペット", audioSrc: "sample_trumpet.mp3" },
+        { id: "violin_own",     title: "ヴァイオリン", audioSrc: "maid_violin.wav" },
+        { id: "violin_sample",  title: "ヴァイオリン", audioSrc: "sample_violin.mp3" },
+        { id: "snare_own",      title: "スネア",       audioSrc: "maid_snare.wav" },
+        { id: "snare_sample",   title: "スネア",       audioSrc: "sample_snare.mp3" }
+    ];
+
+    // あなたのウェブアプリURLがすでに入っています
+    const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzf8YbnSu7KJdoEToEOQkV_2ftaK_57VTGuwrotIo4B0DpFUgWfQDhmafmNmUanjaqr/exec";
+
+    let shuffledData = [];
+    let currentStep = -1; // -1 は学籍番号入力の画面、0〜7が音源の画面
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function renderSurvey() {
+        shuffledData = shuffle([...sectionsData]);
+        const container = document.getElementById('survey-sections');
+
+        shuffledData.forEach((data, index) => {
+            const sectionHtml = `
+                <div class="section" id="step-${index}">
+                    <h2>質問：${data.title}</h2>
+                    <audio controls src="${data.audioSrc}"></audio>
+                    <p class="question-text">この音源は、どのくらい「${data.title}」らしく聴こえますか？</p>
+                    <div class="likert-scale">
+                        <span class="scale-label">その楽器らしくない</span>
+                        <label class="likert-option"><input type="radio" name="${data.id}" value="1">1</label>
+                        <label class="likert-option"><input type="radio" name="${data.id}" value="2">2</label>
+                        <label class="likert-option"><input type="radio" name="${data.id}" value="3">3</label>
+                        <label class="likert-option"><input type="radio" name="${data.id}" value="4">4</label>
+                        <label class="likert-option"><input type="radio" name="${data.id}" value="5">5</label>
+                        <span class="scale-label">その楽器らしい</span>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += sectionHtml;
+        });
+
+        // 最初の状態（学籍番号画面）の進捗表示
+        document.getElementById('progress-text').innerText = `準備 / 全8問`;
+    }
+
+    function showStep(step) {
+        const sections = document.querySelectorAll('.section');
+        sections.forEach(sec => sec.classList.remove('active'));
+
+        if (step === -1) {
+            document.getElementById('step-student-id').classList.add('active');
+            document.getElementById('progress-text').innerText = `準備 / 全8問`;
+        } else {
+            document.getElementById(`step-${step}`).classList.add('active');
+            document.getElementById('progress-text').innerText = `質問 ${step + 1} / ${shuffledData.length}`;
+        }
+
+        if (step === shuffledData.length - 1) {
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('submit-btn').style.display = 'block';
+        }
+    }
+
+    function nextSection() {
+        // 学籍番号画面でのチェック
+        if (currentStep === -1) {
+            const studentId = document.getElementById('student_id_input').value.trim();
+            if (!studentId) {
+                alert("学籍番号を入力してください。");
+                return;
+            }
+            currentStep++;
+            showStep(currentStep);
+            return;
+        }
+
+        // 音源画面でのチェック
+        const currentQuestion = shuffledData[currentStep];
+        const selected = document.querySelector(`input[name="${currentQuestion.id}"]:checked`);
+
+        if (!selected) {
+            alert("回答を選択してください。");
+            return;
+        }
+
+        currentStep++;
+        showStep(currentStep);
+    }
+
+    function submitSurvey() {
+        const currentQuestion = shuffledData[currentStep];
+        const selected = document.querySelector(`input[name="${currentQuestion.id}"]:checked`);
+        if (!selected) {
+            alert("回答を選択してください。");
+            return;
+        }
+
+        // すべての回答（学籍番号＋8つの評価）を集計
+        const answers = {};
+        answers["student_id"] = document.getElementById('student_id_input').value.trim();
+
+        sectionsData.forEach(data => {
+            const val = document.querySelector(`input[name="${data.id}"]:checked`).value;
+            answers[data.id] = val;
+        });
+
+        if (GAS_WEBAPP_URL === "" || GAS_WEBAPP_URL.includes("ここにウェブアプリ")) {
+            alert("コード内の GAS_WEBAPP_URL が設定されていません。");
+            return;
+        }
+
+        fetch(GAS_WEBAPP_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(answers)
+        })
+        .then(() => {
+            alert("アンケートの回答が正常に送信されました。ご協力ありがとうございました！");
+            location.reload(); 
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("送信中にエラーが発生しました。");
+        });
+    }
+
+    window.onload = renderSurvey;
+</script>
+
+</body>
+</html>
