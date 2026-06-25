@@ -85,6 +85,14 @@
             color: #666;
             font-weight: bold;
         }
+        /* 案内用ページのテキスト装飾 */
+        .instruction-box {
+            background-color: #f0f7ff;
+            border-left: 5px solid #0066cc;
+            padding: 15px;
+            border-radius: 4px;
+            line-height: 1.6;
+        }
         .nav-buttons {
             margin-top: 30px;
         }
@@ -107,17 +115,33 @@
 <body>
 
 <div class="survey-container">
-    <h1>音源に関するアンケート</h1>
-    <p id="survey-intro">それぞれの音源を聴いて、その楽器としての「らしさ」を5段階で評価してください。</p>
+    <div id="survey-header">
+        <h1>音源に関するアンケート</h1>
+        <p id="survey-intro">それぞれの音源を聴いて、その楽器としての「らしさ」を5段階で評価してください。</p>
+    </div>
+    
     <div class="progress-bar" id="progress-text"></div>
     <hr>
 
     <div id="survey-sections">
+        
         <div class="section active" id="step-student-id">
             <h2>回答者の情報を入力してください</h2>
-            <p class="question-text">学籍番号を入力してください（例: 2○G○○○○）</p>
+            <p class="question-text">学籍番号を入力してください（例: 12345678）</p>
             <input type="text" id="student_id_input" placeholder="学籍番号を入力">
         </div>
+
+        <div class="section" id="step-instruction">
+            <h2>回答にあたってのご案内</h2>
+            <div class="instruction-box">
+                <p><strong>【回答手順と注意事項】</strong></p>
+                <p>1. 各ページに設置されている音声プレイヤーの再生ボタンを押して、音源を聴いてください。</p>
+                <p>2. その音が、提示されている楽器としてどれくらい「らしい」かを 1 〜 5 の5段階で評価してください。</p>
+                <p>3. 直感で構いませんので、音源をしっかり聴いてから選択し、「次へ進む」を押してください。</p>
+                <p>※一度次のページに進むと戻ることはできませんのでご注意ください。</p>
+            </div>
+        </div>
+
     </div>
 
     <div class="nav-buttons">
@@ -129,21 +153,20 @@
 <script>
     // 1. 全8個の音源データを定義
     const sectionsData = [
-        { id: "piano_own",      title: "ピアノ",       audioSrc: "maid_piano.wav" },
-        { id: "piano_sample",   title: "ピアノ",       audioSrc: "sample_piano.mp3" },
-        { id: "trumpet_own",    title: "トランペット", audioSrc: "maid_trumpet.wav" },
-        { id: "trumpet_sample", title: "トランペット", audioSrc: "sample_trumpet.mp3" },
-        { id: "violin_own",     title: "ヴァイオリン", audioSrc: "maid_violin.wav" },
-        { id: "violin_sample",  title: "ヴァイオリン", audioSrc: "sample_violin.mp3" },
-        { id: "snare_own",      title: "スネア",       audioSrc: "maid_snare.wav" },
-        { id: "snare_sample",   title: "スネア",       audioSrc: "sample_snare.mp3" }
+        { id: "piano_own",      title: "ピアノ",       audioSrc: "piano_own.mp3" },
+        { id: "piano_sample",   title: "ピアノ",       audioSrc: "piano_sample.mp3" },
+        { id: "trumpet_own",    title: "トランペット", audioSrc: "trumpet_own.mp3" },
+        { id: "trumpet_sample", title: "トランペット", audioSrc: "trumpet_sample.mp3" },
+        { id: "violin_own",     title: "ヴァイオリン", audioSrc: "violin_own.mp3" },
+        { id: "violin_sample",  title: "ヴァイオリン", audioSrc: "violin_sample.mp3" },
+        { id: "snare_own",      title: "スネア",       audioSrc: "snare_own.mp3" },
+        { id: "snare_sample",   title: "スネア",       audioSrc: "snare_sample.mp3" }
     ];
 
-    // あなたのウェブアプリURLがすでに入っています
     const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzf8YbnSu7KJdoEToEOQkV_2ftaK_57VTGuwrotIo4B0DpFUgWfQDhmafmNmUanjaqr/exec";
 
     let shuffledData = [];
-    let currentStep = -1; // -1 は学籍番号入力の画面、0〜7が音源の画面
+    let currentStep = -2; // -2: 学籍番号, -1: 案内ページ, 0〜7: 各音源質問
 
     function shuffle(array) {
         for (let i = array.length - 1; i > 0; i--) {
@@ -177,7 +200,6 @@
             container.innerHTML += sectionHtml;
         });
 
-        // 最初の状態（学籍番号画面）の進捗表示
         document.getElementById('progress-text').innerText = `準備 / 全8問`;
     }
 
@@ -185,12 +207,23 @@
         const sections = document.querySelectorAll('.section');
         sections.forEach(sec => sec.classList.remove('active'));
 
-        if (step === -1) {
+        const headerArea = document.getElementById('survey-header');
+
+        if (step === -2) {
+            // 学籍番号画面
             document.getElementById('step-student-id').classList.add('active');
             document.getElementById('progress-text').innerText = `準備 / 全8問`;
+            headerArea.style.display = 'block'; // ヘッダーを表示
+        } else if (step === -1) {
+            // フォーマット案内画面
+            document.getElementById('step-instruction').classList.add('active');
+            document.getElementById('progress-text').innerText = `案内 / 全8問`;
+            headerArea.style.display = 'block'; // ヘッダーを表示
         } else {
+            // 音源の質問画面（ここからはヘッダーの説明文を非表示にする）
             document.getElementById(`step-${step}`).classList.add('active');
             document.getElementById('progress-text').innerText = `質問 ${step + 1} / ${shuffledData.length}`;
+            headerArea.style.display = 'none'; // ヘッダーを非表示にする
         }
 
         if (step === shuffledData.length - 1) {
@@ -200,8 +233,7 @@
     }
 
     function nextSection() {
-        // 学籍番号画面でのチェック
-        if (currentStep === -1) {
+        if (currentStep === -2) {
             const studentId = document.getElementById('student_id_input').value.trim();
             if (!studentId) {
                 alert("学籍番号を入力してください。");
@@ -212,7 +244,13 @@
             return;
         }
 
-        // 音源画面でのチェック
+        if (currentStep === -1) {
+            // 案内ページからはチェックなしで次へ
+            currentStep++;
+            showStep(currentStep);
+            return;
+        }
+
         const currentQuestion = shuffledData[currentStep];
         const selected = document.querySelector(`input[name="${currentQuestion.id}"]:checked`);
 
@@ -238,7 +276,6 @@
         submitBtn.innerText = "送信中...";
         submitBtn.style.backgroundColor = "#ccc";
 
-        // すべての回答（学籍番号＋8つの評価）を集計
         const answers = {};
         answers["student_id"] = document.getElementById('student_id_input').value.trim();
 
@@ -249,6 +286,9 @@
 
         if (GAS_WEBAPP_URL === "" || GAS_WEBAPP_URL.includes("ここにウェブアプリ")) {
             alert("コード内の GAS_WEBAPP_URL が設定されていません。");
+            submitBtn.disabled = false;
+            submitBtn.innerText = "回答を送信する";
+            submitBtn.style.backgroundColor = "#4CAF50";
             return;
         }
 
@@ -267,6 +307,9 @@
         .catch(error => {
             console.error("Error:", error);
             alert("送信中にエラーが発生しました。");
+            submitBtn.disabled = false;
+            submitBtn.innerText = "回答を送信する";
+            submitBtn.style.backgroundColor = "#4CAF50";
         });
     }
 
