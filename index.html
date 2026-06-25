@@ -233,6 +233,11 @@
             return;
         }
 
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.innerText = "送信中...";
+        submitBtn.style.backgroundColor = "#ccc";
+
         // すべての回答（学籍番号＋8つの評価）を集計
         const answers = {};
         answers["student_id"] = document.getElementById('student_id_input').value.trim();
